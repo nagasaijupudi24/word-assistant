@@ -1,19 +1,16 @@
 import { model4one, model4 } from "../../webconfig.js";
 
-const CHUNK_SIZE = 12000;
-const CHUNK_OVERLAP = 200;
-const MAX_CHUNKS = 3;
+
 const MAX_HISTORY = 5;
 
 // Global State
-let documentChunks = [];
-let chunkOffsets = [];
+
 let conversationHistory = [];
 let isStreaming = false;
 let isProcessing = false;
 let abortController = null;
 let currentDocumentContent = "";
-let documentContentAvailable = false;
+
 let isVisible = false;
 let newChatButton = document.getElementById("newChatButton");
 let chatHistory = document.getElementById("chatHistory");
@@ -45,7 +42,7 @@ if (window.Office && Office.onReady) {
 function initializeApp() {
   setupChatInterface();
   setupDocumentContentMonitoring();
-  loadConversation();
+  // loadConversation();
   setupUIEventListeners();
 }
 
@@ -206,89 +203,90 @@ function setupChatInterface() {
 
   newChatButton?.addEventListener("click", startNewChat);
 
-  document.querySelectorAll(".example-card").forEach((card) => {
-    card.addEventListener("click", function () {
-      const prompt = this.getAttribute("data-prompt");
-      const userPrompt = document.getElementById("userPrompt");
-      if (userPrompt) {
-        userPrompt.value = prompt;
-        userPrompt.dispatchEvent(new Event("input"));
-        setTimeout(sendMessage, 100);
-      }
-    });
-  });
+  // document.querySelectorAll(".example-card").forEach((card) => {
+  //   card.addEventListener("click", function () {
+  //     const prompt = this.getAttribute("data-prompt");
+  //     const userPrompt = document.getElementById("userPrompt");
+  //     if (userPrompt) {
+  //       userPrompt.value = prompt;
+  //       userPrompt.dispatchEvent(new Event("input"));
+  //       setTimeout(sendMessage, 100);
+  //     }
+  //   });
+  // });
 }
 
 // Document Processing
-function chunkDocument(content) {
-  documentChunks = [];
-  chunkOffsets = [];
-  if (!content) return [];
+// function chunkDocument(content) {
+//   documentChunks = [];
+//   chunkOffsets = [];
+//   if (!content) return [];
 
-  let pos = 0;
-  while (pos < content.length) {
-    let end = Math.min(pos + CHUNK_SIZE, content.length);
+//   let pos = 0;
+//   while (pos < content.length) {
+//     let end = Math.min(pos + CHUNK_SIZE, content.length);
 
-    // Try to end at sentence boundary
-    const sentenceBoundary = Math.max(
-      content.lastIndexOf(".", end),
-      content.lastIndexOf("?", end),
-      content.lastIndexOf("!", end),
-      content.lastIndexOf("\n\n", end)
-    );
+//     // Try to end at sentence boundary
+//     const sentenceBoundary = Math.max(
+//       content.lastIndexOf(".", end),
+//       content.lastIndexOf("?", end),
+//       content.lastIndexOf("!", end),
+//       content.lastIndexOf("\n\n", end)
+//     );
 
-    if (sentenceBoundary > pos + CHUNK_SIZE / 2) {
-      end = sentenceBoundary + 1;
-    }
+//     if (sentenceBoundary > pos + CHUNK_SIZE / 2) {
+//       end = sentenceBoundary + 1;
+//     }
 
-    const chunk = content.substring(pos, end).trim();
-    if (chunk) {
-      documentChunks.push(chunk);
-      chunkOffsets.push({ start: pos, end });
-    }
+//     const chunk = content.substring(pos, end).trim();
+//     if (chunk) {
+//       documentChunks.push(chunk);
+//       chunkOffsets.push({ start: pos, end });
+//     }
 
-    pos = Math.max(end - CHUNK_OVERLAP, pos + 1);
-    if (pos >= content.length) break;
-  }
+//     pos = Math.max(end - CHUNK_OVERLAP, pos + 1);
+//     if (pos >= content.length) break;
+//   }
 
-  // document.getElementById("chunkCount").textContent = documentChunks.length;
-  return documentChunks;
-}
+//   // document.getElementById("chunkCount").textContent = documentChunks.length;
+//   return documentChunks;
+// }
 
-function getRelevantChunks(query, maxChunks = MAX_CHUNKS) {
-  // console.log(query)
-  debugger;
-  if (!documentChunks.length) return [];
+// function getRelevantChunks(query, maxChunks = MAX_CHUNKS) {
+//   // console.log(query)
+//   debugger;
+//   if (!documentChunks.length) return [];
 
-  const keywords = query
-    .toLowerCase()
-    .split(/\W+/)
-    .filter((x) => x.length > 2);
-  const scores = documentChunks.map((chunk, idx) => {
-    const text = chunk.toLowerCase();
-    let score = 0;
-    keywords.forEach((word) => {
-      score += (text.match(new RegExp(`\\b${word}\\b`, "g")) || []).length * 2;
-      score += (text.match(new RegExp(word, "g")) || []).length;
-    });
-    return { idx, score };
-  });
+//   const keywords = query
+//     .toLowerCase()
+//     .split(/\W+/)
+//     .filter((x) => x.length > 2);
+//   const scores = documentChunks.map((chunk, idx) => {
+//     const text = chunk.toLowerCase();
+//     let score = 0;
+//     keywords.forEach((word) => {
+//       score += (text.match(new RegExp(`\\b${word}\\b`, "g")) || []).length * 2;
+//       score += (text.match(new RegExp(word, "g")) || []).length;
+//     });
+//     return { idx, score };
+//   });
 
-  scores.sort((a, b) => b.score - a.score);
-  const selected = new Set(scores.slice(0, maxChunks).map((s) => s.idx));
+//   scores.sort((a, b) => b.score - a.score);
+//   const selected = new Set(scores.slice(0, maxChunks).map((s) => s.idx));
 
-  // Always include first and last chunks
-  selected.add(0);
-  selected.add(documentChunks.length - 1);
+//   // Always include first and last chunks
+//   selected.add(0);
+//   selected.add(documentChunks.length - 1);
 
-  return Array.from(selected)
-    .sort((a, b) => a - b)
-    .map((i) => documentChunks[i]);
-}
+//   return Array.from(selected)
+//     .sort((a, b) => a - b)
+//     .map((i) => documentChunks[i]);
+// }
 
 // Document Content Handling
 function setupDocumentContentMonitoring() {
-  getFullDocumentContent().then(handleDocumentContent);
+  getFullDocumentContent()
+  // .then(handleDocumentContent);
 
   // Listen for document content changes and chunk updated content
   if (window.Word && Office.context?.document) {
@@ -298,7 +296,7 @@ function setupDocumentContentMonitoring() {
       async function () {
         // Get updated content and chunk
         const updatedContent = await getFullDocumentContent();
-        chunkDocument(updatedContent);
+        // chunkDocument(updatedContent);
       }
     );
   } else {
@@ -306,10 +304,10 @@ function setupDocumentContentMonitoring() {
     setInterval(async () => {
       const updatedContent = await getFullDocumentContent();
       if (updatedContent !== currentDocumentContent) {
-        chunkDocument(updatedContent);
+        // chunkDocument(updatedContent);
         currentDocumentContent = updatedContent;
       }
-    }, 2000); // Check every 2 seconds
+    }, 5000); // Check every 2 seconds
   }
 }
 
@@ -333,25 +331,25 @@ async function getFullDocumentContent() {
   });
 }
 
-function handleDocumentContent(content) {
-  currentDocumentContent = content || "";
-  documentContentAvailable = !!content?.trim();
+// function handleDocumentContent(content) {
+//   currentDocumentContent = content || "";
+//   documentContentAvailable = !!content?.trim();
 
-  // if (!documentContentAvailable) {
-  //    newChatButton.disabled = true;
-  //   showNullDocumentMessage();
-  //   return;
-  // }
+//   // if (!documentContentAvailable) {
+//   //    newChatButton.disabled = true;
+//   //   showNullDocumentMessage();
+//   //   return;
+//   // }
 
-  chunkDocument(content);
-  enableInput();
+//   chunkDocument(content);
+//   enableInput();
 
-  const docPreview = document.getElementById("documentContent");
-  if (docPreview) {
-    docPreview.textContent = content.length > 1000 ? content.substring(0, 1000) + "..." : content;
-    docPreview.classList.remove("empty");
-  }
-}
+//   const docPreview = document.getElementById("documentContent");
+//   if (docPreview) {
+//     docPreview.textContent = content.length > 1000 ? content.substring(0, 1000) + "..." : content;
+//     docPreview.classList.remove("empty");
+//   }
+// }
 
 function showNullDocumentMessage() {
   const chatHistory = document.getElementById("chatHistory");
@@ -375,73 +373,73 @@ function disableInput() {
   if (button) button.disabled = true;
 }
 
-function enableInput() {
-  document.getElementById("chatHistory").classList.remove("hide");
-  const input = document.getElementById("userPrompt");
-  const button = document.getElementById("send-button");
-  newChatButton.disabled = false;
-  if (input) input.disabled = false;
-  if (button) button.disabled = false;
-}
+// function enableInput() {
+//   document.getElementById("chatHistory").classList.remove("hide");
+//   const input = document.getElementById("userPrompt");
+//   const button = document.getElementById("send-button");
+//   newChatButton.disabled = false;
+//   if (input) input.disabled = false;
+//   if (button) button.disabled = false;
+// }
 
 // Conversation Management
-function saveConversation() {
-  document.getElementById("chatHistory").classList.remove("welcome-contianer");
-  try {
-    const trimmed = conversationHistory.slice(-MAX_HISTORY);
-    localStorage.setItem("documentChatHistory", JSON.stringify(trimmed));
+// function saveConversation() {
+//   document.getElementById("chatHistory").classList.remove("welcome-contianer");
+//   try {
+//     const trimmed = conversationHistory.slice(-MAX_HISTORY);
+//     localStorage.setItem("documentChatHistory", JSON.stringify(trimmed));
 
-    // Add null check for historyCount element
-    const historyCountElem = document.getElementById("historyCount");
-    if (historyCountElem) {
-      historyCountElem.textContent = trimmed.length;
-    }
-  } catch (e) {
-    console.error("Error saving conversation:", e);
-  }
-}
+//     // Add null check for historyCount element
+//     const historyCountElem = document.getElementById("historyCount");
+//     if (historyCountElem) {
+//       historyCountElem.textContent = trimmed.length;
+//     }
+//   } catch (e) {
+//     console.error("Error saving conversation:", e);
+//   }
+// }
 
-function loadConversation() {
-  try {
-    const saved = localStorage.getItem("documentChatHistory");
-    let loaded = [];
-    if (saved) {
-      // Filter out any system messages and duplicates
-      loaded = JSON.parse(saved).slice(-MAX_HISTORY);
-      loaded = loaded.filter((msg, idx, arr) => {
-        // Remove system messages
-        if (msg.role === "system") return false;
-        // Remove consecutive duplicates
-        if (idx > 0 && msg.role === arr[idx - 1].role && msg.content === arr[idx - 1].content)
-          return false;
-        return true;
-      });
-    }
-    conversationHistory = loaded;
-    if (conversationHistory.length === 0) {
-      showWelcomeSection();
-    } else {
-      renderConversation();
-    }
-  } catch (e) {
-    console.error("Error loading conversation:", e);
-  }
+// function loadConversation() {
+//   try {
+//     // const saved = localStorage.getItem("documentChatHistory");
+//     // let loaded = [];
+//     // if (saved) {
+//     //   // Filter out any system messages and duplicates
+//     //   loaded = JSON.parse(saved).slice(-MAX_HISTORY);
+//     //   loaded = loaded.filter((msg, idx, arr) => {
+//     //     // Remove system messages
+//     //     if (msg.role === "system") return false;
+//     //     // Remove consecutive duplicates
+//     //     if (idx > 0 && msg.role === arr[idx - 1].role && msg.content === arr[idx - 1].content)
+//     //       return false;
+//     //     return true;
+//     //   });
+//     // }
+//     // conversationHistory = loaded;
+//     if (conversationHistory.length === 0) {
+//       showWelcomeSection();
+//     } else {
+//       renderConversation();
+//     }
+//   } catch (e) {
+//     console.error("Error loading conversation:", e);
+//   }
 
-  // Show welcome section if chat history is empty
-  function showWelcomeSection() {
-    if (chatHistory) {
-      chatHistory.classList.add("welcome-contianer");
-      chatHistory.style.justifyContent = "center";
-      chatHistory.innerHTML = `   
-      <div id="welcome-section">
-        <div class="welcome-header">
-          <img src="../../assets/logo-filled.png" alt="Copilot">
-          <h2>How can I help with this Word?</h2>
-        </div>
-      </div>`;
-    }
-  }
-}
+//   // Show welcome section if chat history is empty
+//   function showWelcomeSection() {
+//     if (chatHistory) {
+//       chatHistory.classList.add("welcome-contianer");
+//       chatHistory.style.justifyContent = "center";
+//       chatHistory.innerHTML = `   
+//       <div id="welcome-section">
+//         <div class="welcome-header">
+//           <img src="../../assets/logo-filled.png" alt="Copilot">
+//           <h2>How can I help with this Word?</h2>
+//         </div>
+//       </div>`;
+//     }
+//   }
+// }
 
 function renderConversation() {
   const chatHistory = document.getElementById("chatHistory");
@@ -467,7 +465,7 @@ function startNewChat() {
   conversationHistory = [];
   lastUserMessage = null;
   lastAIResponse = null;
-  saveConversation();
+  // saveConversation();
   const chatHistory = document.getElementById("chatHistory");
   chatHistory.style.justifyContent = "center";
   if (chatHistory) {
@@ -557,7 +555,7 @@ async function sendMessage() {
     // }
 
     // Process message
-    const relevantChunks = getRelevantChunks(message, MAX_CHUNKS);
+    // const relevantChunks = getRelevantChunks(message, MAX_CHUNKS);
     // console.log(relevantChunks, "Relevant Chunks");
 
     // const testingEndpoint = await postWordQuery(currentDocumentContent);
@@ -567,13 +565,13 @@ async function sendMessage() {
 
     // Get AI response
     await getAIResponse(messages);
-    saveConversation();
+    // saveConversation();
   } catch (error) {
     console.error("Error in sendMessage:", error);
     const errorMessage = `Sorry, I encountered an error: ${error.message || "Please try again"}`;
     addMessageToUI("assistant", errorMessage);
     conversationHistory.push({ role: "assistant", content: errorMessage });
-    saveConversation();
+    // saveConversation();
   } finally {
     removeTypingIndicator();
     updateSendButton(false);
@@ -802,7 +800,7 @@ function updateOrCreateMessage(messageElement, content) {
 
 function finalizeResponse(content) {
   conversationHistory.push({ role: "assistant", content });
-  saveConversation();
+  // saveConversation();
   isStreaming = false;
 }
 
@@ -986,24 +984,24 @@ function updateSendButton(isStreaming) {
 }
 
 // Content Actions
-function isDraftContent(content) {
-  if (!content) return false;
-  const draftKeywords = [
-    "draft",
-    "summary",
-    "outline",
-    "content",
-    "section",
-    "conclusion",
-    "introduction",
-    "generated",
-    "paragraph",
-    "bullet points",
-    "points",
-  ];
-  const lower = content.toLowerCase();
-  return draftKeywords.some((k) => lower.includes(k)) || content.length > 100;
-}
+// function isDraftContent(content) {
+//   if (!content) return false;
+//   const draftKeywords = [
+//     "draft",
+//     "summary",
+//     "outline",
+//     "content",
+//     "section",
+//     "conclusion",
+//     "introduction",
+//     "generated",
+//     "paragraph",
+//     "bullet points",
+//     "points",
+//   ];
+//   const lower = content.toLowerCase();
+//   return draftKeywords.some((k) => lower.includes(k)) || content.length > 100;
+// }
 
 function insertContent(content) {
   // Always use HTML formatting for both insert and copy actions
